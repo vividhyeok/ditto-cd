@@ -518,6 +518,191 @@ select.is-disabled {
   gap: 0.5rem;
 }
 
+.link-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(113, 244, 200, 0.45);
+  background: rgba(113, 244, 200, 0.12);
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.85rem;
+  word-break: break-all;
+  transition: background 0.2s ease, transform 0.2s ease, border 0.2s ease;
+}
+
+.link-chip:hover,
+.link-chip:focus-visible {
+  background: rgba(113, 244, 200, 0.22);
+  border-color: rgba(113, 244, 200, 0.65);
+  transform: translateY(-1px);
+}
+
+.nfc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  border: 1px solid rgba(113, 244, 200, 0.25);
+  background: linear-gradient(160deg, rgba(113, 244, 200, 0.15), rgba(10, 14, 18, 0.92));
+  position: relative;
+  overflow: hidden;
+}
+
+.nfc-card::before {
+  content: '';
+  position: absolute;
+  inset: -20% 30% auto -20%;
+  height: 180px;
+  background: radial-gradient(circle, rgba(113, 244, 200, 0.25), transparent 65%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.nfc-card > * {
+  position: relative;
+}
+
+.nfc-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.nfc-card__hint {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.nfc-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.play-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.visualizer-card {
+  position: relative;
+  border-radius: var(--radius-large);
+  overflow: hidden;
+  border: 1px solid rgba(113, 244, 200, 0.2);
+  background: radial-gradient(circle at top, rgba(113, 244, 200, 0.14), rgba(5, 6, 8, 0.92));
+  min-height: 220px;
+  box-shadow: inset 0 0 40px rgba(9, 24, 18, 0.45);
+}
+
+.visualizer-card::before {
+  content: '';
+  position: absolute;
+  inset: -35% 10% auto -15%;
+  height: 240px;
+  background: radial-gradient(circle at top, rgba(113, 244, 200, 0.2), transparent 68%);
+  filter: blur(30px);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.visualizer-card canvas {
+  width: 100%;
+  height: 220px;
+  display: block;
+  mix-blend-mode: screen;
+  opacity: 0.92;
+}
+
+.visualizer-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(5, 6, 8, 0.0), rgba(5, 6, 8, 0.6));
+}
+
+.visualizer-overlay button {
+  pointer-events: auto;
+}
+
+.visual-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.78rem 1.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(113, 244, 200, 0.55);
+  background: rgba(113, 244, 200, 0.18);
+  color: var(--text);
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.visual-button:hover,
+.visual-button:focus-visible {
+  background: rgba(113, 244, 200, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 18px 42px rgba(8, 20, 16, 0.5);
+}
+
+.visual-button.is-playing {
+  background: rgba(113, 244, 200, 0.34);
+  box-shadow: 0 0 0 3px rgba(113, 244, 200, 0.2);
+}
+
+.visual-button__icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+}
+
+.visual-button__icon::before {
+  content: '▶';
+  font-size: 1rem;
+  transform: translateX(1px);
+  transition: transform 0.2s ease;
+}
+
+.visual-button.is-playing .visual-button__icon::before {
+  content: '⏸';
+  transform: translateX(0);
+}
+
+.visual-button__label {
+  font-size: 0.95rem;
+}
+
+.visual-stop {
+  padding: 0.55rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(3, 5, 8, 0.6);
+  color: var(--muted);
+  transition: background 0.2s ease, color 0.2s ease, border 0.2s ease;
+}
+
+.visual-stop:hover,
+.visual-stop:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
 .variant-list {
   display: flex;
   flex-direction: column;
@@ -613,6 +798,20 @@ button.secondary:focus-visible {
     width: 100%;
   }
 
+  .visualizer-card {
+    min-height: 180px;
+  }
+
+  .visualizer-card canvas {
+    height: 180px;
+  }
+
+  .visual-button {
+    padding: 0.7rem 1.4rem;
+    font-size: 0.88rem;
+    letter-spacing: 0.08em;
+  }
+
   .top-bar {
     flex-direction: column;
     align-items: stretch;
@@ -643,6 +842,14 @@ button.secondary:focus-visible {
     gap: 0.6rem;
   }
 
+  .link-chip {
+    font-size: 0.8rem;
+  }
+
+  .nfc-card__actions {
+    flex-direction: column;
+  }
+
   .pad-layout {
     grid-template-columns: 1fr;
   }
@@ -664,6 +871,10 @@ button.secondary:focus-visible {
   .column-indicators {
     font-size: 1.05rem;
     padding: 0;
+  }
+
+  .visualizer-overlay {
+    gap: 0.6rem;
   }
 }
 

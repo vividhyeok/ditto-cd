@@ -23,6 +23,8 @@ const chordTag = document.getElementById('chordTag');
 const metaStringEl = document.getElementById('metaString');
 const playButton = document.getElementById('playToggle');
 const stopButton = document.getElementById('stopButton');
+const spectrumCanvas = document.getElementById('spectrumCanvas');
+const playButtonLabel = playButton?.querySelector('.visual-button__label');
 
 let parsedData;
 let toneEngine;
@@ -31,6 +33,11 @@ let isPlaying = false;
 let currentStep = -1;
 const drumStepElements = TRACKS.map(() => []);
 const chordStepElements = [];
+let analyser;
+let spectrumContext;
+let spectrumAnimationFrame;
+let spectrumGradient;
+let spectrumListening = false;
 
 function emptyChordSteps() {
   return Array.from({ length: STEP_COUNT }, () => ({ chordIndex: null, head: false, length: 0 }));
@@ -67,7 +74,7 @@ function renderPattern(matrix, chords) {
       cell.classList.add('chord-active');
       if (step.head) {
         cell.classList.add('chord-head');
-  cell.textContent = getScaleLabel(step.chordIndex);
+        cell.textContent = getScaleLabel(step.chordIndex);
       } else {
         cell.textContent = '—';
       }
@@ -133,6 +140,122 @@ function ensureToneEngine() {
   toneEngine.setBpm(parsedData.tempo);
 }
 
+function setupAnalyser() {
+  if (!analyser) {
+    analyser = new Tone.Analyser('fft', 128);
+    Tone.Destination.connect(analyser);
+  }
+}
+
+function ensureSpectrumContext() {
+  if (!spectrumCanvas) return null;
+  if (!spectrumContext) {
+    spectrumContext = spectrumCanvas.getContext('2d');
+  }
+  return spectrumContext;
+}
+
+function resizeSpectrumCanvas() {
+  if (!spectrumCanvas || !spectrumContext) return;
+  const { clientWidth, clientHeight } = spectrumCanvas;
+  if (!clientWidth || !clientHeight) return;
+  const dpr = window.devicePixelRatio || 1;
+  const width = Math.round(clientWidth * dpr);
+  const height = Math.round(clientHeight * dpr);
+  if (spectrumCanvas.width !== width || spectrumCanvas.height !== height) {
+    spectrumCanvas.width = width;
+    spectrumCanvas.height = height;
+  }
+  spectrumContext.setTransform(1, 0, 0, 1, 0, 0);
+  spectrumContext.scale(dpr, dpr);
+  spectrumGradient = null;
+}
+
+function getSpectrumGradient(height) {
+  if (!spectrumContext) return '#71f4c8';
+  if (!spectrumGradient) {
+    const gradient = spectrumContext.createLinearGradient(0, height, 0, 0);
+    gradient.addColorStop(0, 'rgba(113, 244, 200, 0.1)');
+    gradient.addColorStop(0.35, 'rgba(113, 244, 200, 0.35)');
+    gradient.addColorStop(1, 'rgba(195, 252, 233, 0.9)');
+    spectrumGradient = gradient;
+  }
+  return spectrumGradient;
+}
+
+function renderSpectrumFrame() {
+  if (!analyser || !spectrumCanvas || !ensureSpectrumContext()) return;
+  resizeSpectrumCanvas();
+  const ctx = spectrumContext;
+  const width = spectrumCanvas.clientWidth;
+  const height = spectrumCanvas.clientHeight;
+  ctx.clearRect(0, 0, width, height);
+
+  const values = analyser.getValue();
+  const barCount = values.length;
+  if (!barCount) return;
+
+  const stepWidth = width / barCount;
+  const barWidth = Math.max(stepWidth * 0.7, 2);
+  const gradient = getSpectrumGradient(height);
+
+  ctx.fillStyle = 'rgba(113, 244, 200, 0.06)';
+  ctx.fillRect(0, height * 0.65, width, height * 0.35);
+
+  ctx.fillStyle = gradient;
+  ctx.globalAlpha = 0.9;
+  for (let i = 0; i < barCount; i += 1) {
+    const value = values[i];
+    const normalized = Math.min(Math.max((value + 100) / 100, 0), 1);
+    const eased = normalized ** 1.5;
+    const barHeight = eased * height;
+    const x = i * stepWidth + (stepWidth - barWidth) / 2;
+    ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = 'rgba(113, 244, 200, 0.4)';
+  ctx.fillRect(0, height - 2, width, 2);
+
+  spectrumAnimationFrame = requestAnimationFrame(renderSpectrumFrame);
+}
+
+function startSpectrum() {
+  if (!spectrumCanvas) return;
+  setupAnalyser();
+  if (!ensureSpectrumContext()) return;
+  resizeSpectrumCanvas();
+  if (!spectrumListening) {
+    window.addEventListener('resize', resizeSpectrumCanvas);
+    spectrumListening = true;
+  }
+  cancelAnimationFrame(spectrumAnimationFrame);
+  spectrumAnimationFrame = requestAnimationFrame(renderSpectrumFrame);
+}
+
+function stopSpectrum() {
+  if (spectrumAnimationFrame) {
+    cancelAnimationFrame(spectrumAnimationFrame);
+    spectrumAnimationFrame = null;
+  }
+  if (spectrumContext && spectrumCanvas) {
+    spectrumContext.clearRect(0, 0, spectrumCanvas.clientWidth, spectrumCanvas.clientHeight);
+  }
+  if (spectrumListening) {
+    window.removeEventListener('resize', resizeSpectrumCanvas);
+    spectrumListening = false;
+  }
+}
+
+function updatePlayButtonState() {
+  if (!playButton) return;
+  playButton.classList.toggle('is-playing', isPlaying);
+  playButton.setAttribute('aria-pressed', isPlaying ? 'true' : 'false');
+  if (playButtonLabel) {
+    playButtonLabel.textContent = isPlaying ? '재생 중' : 'Play';
+  }
+}
+
 function buildEngineTimeline() {
   const barVariants = parsedData.barVariants && parsedData.barVariants.length
     ? parsedData.barVariants
@@ -158,7 +281,8 @@ async function startPlayback() {
   scheduleTransport();
   Tone.Transport.start('+0.05');
   isPlaying = true;
-  playButton.textContent = 'Playing';
+  startSpectrum();
+  updatePlayButtonState();
   showToast('루프 재생 중');
 }
 
@@ -174,11 +298,18 @@ function stopPlayback() {
   isPlaying = false;
   currentStep = -1;
   clearHighlight();
-  playButton.textContent = 'Play';
+  stopSpectrum();
+  updatePlayButtonState();
 }
 
 function bindActions() {
-  playButton.addEventListener('click', startPlayback);
+  playButton.addEventListener('click', () => {
+    if (isPlaying) {
+      stopPlayback();
+    } else {
+      startPlayback();
+    }
+  });
   stopButton.addEventListener('click', stopPlayback);
   window.addEventListener('pagehide', stopPlayback);
   window.addEventListener('beforeunload', stopPlayback);
@@ -189,6 +320,9 @@ function showError(message) {
   patternStatsEl.textContent = message;
   playButton.disabled = true;
   stopButton.disabled = true;
+  stopSpectrum();
+  isPlaying = false;
+  updatePlayButtonState();
 }
 
 function init() {
