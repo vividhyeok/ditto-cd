@@ -2,6 +2,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 :root {
   --bg: #050608;
   --surface: #0b0d11;
