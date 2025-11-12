@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Desk Console · 이음제 부스</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js" defer></script>
+  <script type="module" src="assets/js/desk.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Desk Console</h1>
+      <p>체험자가 만든 루프의 메타데이터를 확인하고 재생/배포를 돕는 운영자 화면</p>
+    </header>
+
+    <section class="control-panel" id="detailPanel">
+      <div class="meta-header">
+        <h2 style="margin:0;font-size:1.2rem;">루프 요약</h2>
+        <div class="tag-list">
+          <span class="tag" id="tempoTag">- BPM</span>
+          <span class="tag" id="chordTag">음계 0개</span>
+        </div>
+      </div>
+
+  <div class="card" id="patternStats">패턴 정보를 불러오는 중...</div>
+
+      <div class="pattern-grid" id="patternPreview"></div>
+
+  <div class="card hidden" id="variantSummary">
+        <strong>바이브 선택</strong>
+        <div class="variant-list" id="variantList"></div>
+      </div>
+
+      <div class="card">
+        <strong>메타데이터</strong>
+        <div class="meta-tag" id="metaString"></div>
+      </div>
+
+      <div class="card">
+        <strong>링크</strong>
+        <a class="meta-tag" id="deskLink" href="#" target="_blank" rel="noopener"></a>
+        <a class="meta-tag" id="loopLink" href="#" target="_blank" rel="noopener"></a>
+        <a class="meta-tag" id="playLink" href="#" target="_blank" rel="noopener"></a>
+      </div>
+
+      <div class="page-actions">
+        <button class="primary" id="playNow" type="button">Play 페이지 열기</button>
+        <button class="secondary" id="openLoop" type="button">Loop 에디터 열기</button>
+      </div>
+
+      <div class="page-actions">
+        <button class="secondary" id="copyMeta" type="button">메타데이터 복사</button>
+        <button class="secondary" id="copyDesk" type="button">Desk 링크 복사</button>
+        <button class="secondary" id="copyLoop" type="button">Loop 링크 복사</button>
+        <button class="secondary" id="copyPlay" type="button">Play 링크 복사</button>
+      </div>
+    </section>
+
+    <section class="meta-panel visible" id="qrPanel">
+      <div class="meta-header">
+        <h2 style="margin:0;font-size:1.2rem;">Desk QR 재생성</h2>
+        <div class="tag-list">
+          <span class="tag">운영자 공유용</span>
+        </div>
+      </div>
+      <div class="qr-wrapper">
+        <canvas id="deskQr" width="220" height="220"></canvas>
+      </div>
+      <small style="color:var(--muted);">필요 시 운영자 화면을 다시 공유할 때 사용하세요</small>
+    </section>
+  </main>
+  <div class="toast"></div>
+</body>
+</html>

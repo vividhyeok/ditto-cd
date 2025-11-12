@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loop Console</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js" defer></script>
+  <script type="module" src="assets/js/loop.js" defer></script>
+</head>
+<body>
+  <main>
+    <section class="control-panel">
+      <div class="track-labels" id="trackLabels"></div>
+
+  <div class="pattern-grid variant-mode" id="patternGrid"></div>
+
+      <div class="card chord-toolbar">
+        <div class="chord-toolbar__header">
+          <span>마디 음계</span>
+          <small>루트와 유형을 선택한 뒤 아래 마디를 탭하세요</small>
+        </div>
+        <div class="chord-toolbar__controls">
+          <select id="chordRoot"></select>
+          <select id="chordQuality"></select>
+          <button class="secondary" id="clearChords" type="button">음계 초기화</button>
+        </div>
+      </div>
+
+      <div class="transport">
+        <div class="controls">
+          <button class="primary" id="playToggle" type="button">Play</button>
+          <button class="secondary" id="clearPattern" type="button">Reset</button>
+        </div>
+        <div class="tempo-control">
+          <label for="tempoRange">Tempo</label>
+          <input id="tempoRange" type="range" min="70" max="180" step="1" />
+          <span id="tempoValue">105 BPM</span>
+        </div>
+      </div>
+
+    <div class="card" id="patternStats">0 drum hits · 음계 0개 · 105 BPM · 대안 패턴 0회</div>
+
+      <div class="page-actions">
+        <button class="primary" id="shareButton" type="button">공유 &amp; QR 만들기</button>
+      </div>
+    </section>
+
+    <section class="meta-panel" id="metaPanel">
+      <div class="meta-header">
+        <h2 style="margin:0;font-size:1.2rem;">메타데이터</h2>
+        <div class="tag-list">
+          <span class="tag">Base62 패턴</span>
+          <span class="tag">NFC 기록 가능</span>
+        </div>
+      </div>
+      <div class="meta-tag" id="metaString"></div>
+      <a id="metaUrl" class="meta-tag" href="#" target="_blank" rel="noopener">링크가 여기에 표시됩니다</a>
+      <div class="qr-wrapper">
+        <canvas id="shareQr" width="220" height="220"></canvas>
+        <small style="color:var(--muted);">QR 스캔 시 Desk 화면으로 이동</small>
+      </div>
+      <div class="page-actions">
+        <button class="secondary" id="copyMeta" type="button">메타데이터 복사</button>
+        <button class="secondary" id="copyUrl" type="button">Desk 링크 복사</button>
+        <button class="secondary" id="writeNfc" type="button">NFC에 기록</button>
+      </div>
+    </section>
+  </main>
+  <div class="toast"></div>
+</body>
+</html>
