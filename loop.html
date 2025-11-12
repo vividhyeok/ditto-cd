@@ -6,7 +6,7 @@
   <title>Loop Pad</title>
   <link rel="stylesheet" href="/assets/css/style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/lib/browser.min.js" defer></script>
+  <script src="/assets/js/vendor/qrcodejs.min.js" defer></script>
   <script type="module" src="/assets/js/loop.js" defer></script>
 </head>
 <body>
@@ -77,7 +77,7 @@
         <div class="meta-tag" id="metaString"></div>
         <a id="metaUrl" class="meta-tag" href="#" target="_blank" rel="noopener">링크가 여기에 표시됩니다</a>
         <div class="qr-wrapper">
-          <canvas id="shareQr" width="220" height="220"></canvas>
+          <div id="shareQr" class="qr-box" role="img" aria-label="공유용 QR"></div>
           <small class="qr-caption">QR 스캔 시 Desk 화면으로 이동</small>
         </div>
         <div class="page-actions">

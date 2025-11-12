@@ -56,7 +56,7 @@ const shareButton = document.getElementById('shareButton');
 const metaPanel = document.getElementById('metaPanel');
 const metaStringEl = document.getElementById('metaString');
 const metaUrlEl = document.getElementById('metaUrl');
-const qrCanvas = document.getElementById('shareQr');
+const qrContainer = document.getElementById('shareQr');
 const copyMetaBtn = document.getElementById('copyMeta');
 const copyUrlBtn = document.getElementById('copyUrl');
 const nfcBtn = document.getElementById('writeNfc');
@@ -68,8 +68,26 @@ const variantButtons = TRACKS.map(() => Array.from({ length: BAR_COUNT }, () => 
 const chordBarElements = [];
 
 const QR_RENDER_OPTIONS = { width: 220, margin: 1 };
-let qrScriptReady = Boolean(window.QRCode?.toCanvas);
+let qrScriptReady = Boolean(window.QRCode);
 let qrScriptListenerRegistered = false;
+let qrInstance = null;
+
+function applyQrAccessibility(url) {
+  if (!qrContainer) {
+    return;
+  }
+  const label = `Desk 링크 QR: ${url}`;
+  qrContainer.setAttribute('role', 'img');
+  qrContainer.setAttribute('aria-label', label);
+  const assignToChild = () => {
+    const child = qrContainer.querySelector('img, canvas');
+    if (child) {
+      child.setAttribute('alt', label);
+      child.setAttribute('aria-label', label);
+    }
+  };
+  requestAnimationFrame(assignToChild);
+}
 
 function ensureQrScriptListener() {
   if (qrScriptReady || qrScriptListenerRegistered) {
@@ -83,11 +101,11 @@ function ensureQrScriptListener() {
   script.addEventListener(
     'load',
     () => {
-      qrScriptReady = true;
+      qrScriptReady = Boolean(window.QRCode);
       qrScriptListenerRegistered = false;
-      if (qrCanvas?.dataset?.pendingUrl) {
-        const pendingUrl = qrCanvas.dataset.pendingUrl;
-        delete qrCanvas.dataset.pendingUrl;
+      if (qrContainer?.dataset?.pendingUrl) {
+        const pendingUrl = qrContainer.dataset.pendingUrl;
+        delete qrContainer.dataset.pendingUrl;
         renderQrCode(pendingUrl);
       }
     },
@@ -96,26 +114,54 @@ function ensureQrScriptListener() {
 }
 
 function renderQrCode(url) {
-  if (!qrCanvas || !url) {
+  if (!qrContainer || !url) {
     return;
   }
-  const context = qrCanvas.getContext ? qrCanvas.getContext('2d') : null;
-  if (context) {
-    context.clearRect(0, 0, qrCanvas.width || 0, qrCanvas.height || 0);
-  }
-  if (qrScriptReady && window.QRCode?.toCanvas) {
-    window.QRCode.toCanvas(qrCanvas, url, QR_RENDER_OPTIONS, (error) => {
+  qrContainer.innerHTML = '';
+  delete qrContainer.dataset.pendingUrl;
+  qrContainer.removeAttribute('data-pending-url');
+
+  const hasToCanvas = Boolean(window.QRCode && typeof window.QRCode.toCanvas === 'function');
+  const isConstructor = typeof window.QRCode === 'function' && !hasToCanvas;
+
+  if (hasToCanvas) {
+    const canvas = document.createElement('canvas');
+    canvas.width = QR_RENDER_OPTIONS.width;
+    canvas.height = QR_RENDER_OPTIONS.width;
+    qrContainer.appendChild(canvas);
+    window.QRCode.toCanvas(canvas, url, QR_RENDER_OPTIONS, (error) => {
       if (error) {
         console.error(error);
         showToast('QR 생성 실패');
+      } else {
+        applyQrAccessibility(url);
       }
     });
     return;
   }
-  if (!qrCanvas.dataset.pendingUrl) {
+
+  if (isConstructor && window.QRCode.CorrectLevel) {
+    if (!qrInstance) {
+      qrInstance = new window.QRCode(qrContainer, {
+        text: url,
+        width: QR_RENDER_OPTIONS.width,
+        height: QR_RENDER_OPTIONS.width,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: window.QRCode.CorrectLevel.H,
+      });
+    } else {
+      qrInstance.clear();
+      qrInstance.makeCode(url);
+    }
+    applyQrAccessibility(url);
+    return;
+  }
+
+  if (!qrContainer.dataset.pendingUrl) {
     showToast('QR 라이브러리를 불러오는 중입니다...');
   }
-  qrCanvas.dataset.pendingUrl = url;
+  qrContainer.dataset.pendingUrl = url;
   ensureQrScriptListener();
 }
 
