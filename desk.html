@@ -39,23 +39,18 @@
         <div class="meta-tag" id="metaString"></div>
       </div>
 
-      <div class="card">
-        <strong>링크</strong>
-        <a class="meta-tag" id="deskLink" href="#" target="_blank" rel="noopener"></a>
-        <a class="meta-tag" id="loopLink" href="#" target="_blank" rel="noopener"></a>
-        <a class="meta-tag" id="playLink" href="#" target="_blank" rel="noopener"></a>
-      </div>
-
-      <div class="page-actions">
-        <button class="primary" id="playNow" type="button">Play 페이지 열기</button>
-        <button class="secondary" id="openLoop" type="button">Loop 에디터 열기</button>
-      </div>
-
-      <div class="page-actions">
-        <button class="secondary" id="copyMeta" type="button">메타데이터 복사</button>
-        <button class="secondary" id="copyDesk" type="button">Desk 링크 복사</button>
-        <button class="secondary" id="copyLoop" type="button">Loop 링크 복사</button>
-        <button class="secondary" id="copyPlay" type="button">Play 링크 복사</button>
+      <div class="card nfc-card">
+        <div class="nfc-card__header">
+          <div>
+            <strong>NFC용 Play 링크</strong>
+            <p class="nfc-card__hint">체험자 NFC 키링 작업 시 바로 복사해 활용하세요.</p>
+          </div>
+        </div>
+        <a class="link-chip" id="playLink" href="#" target="_blank" rel="noopener"></a>
+        <div class="nfc-card__actions">
+          <button class="primary" id="playNow" type="button">체험자 음악 듣기</button>
+          <button class="secondary" id="copyPlay" type="button">Play 링크 복사</button>
+        </div>
       </div>
     </section>
 

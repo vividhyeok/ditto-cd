@@ -16,14 +16,8 @@ const patternStatsEl = document.getElementById('patternStats');
 const tempoTag = document.getElementById('tempoTag');
 const chordTag = document.getElementById('chordTag');
 const metaStringEl = document.getElementById('metaString');
-const deskLinkEl = document.getElementById('deskLink');
-const loopLinkEl = document.getElementById('loopLink');
 const playLinkEl = document.getElementById('playLink');
 const playBtn = document.getElementById('playNow');
-const openLoopBtn = document.getElementById('openLoop');
-const copyMetaBtn = document.getElementById('copyMeta');
-const copyDeskBtn = document.getElementById('copyDesk');
-const copyLoopBtn = document.getElementById('copyLoop');
 const copyPlayBtn = document.getElementById('copyPlay');
 const deskQrCanvas = document.getElementById('deskQr');
 const detailPanel = document.getElementById('detailPanel');
@@ -136,28 +130,27 @@ function updateTags() {
 
 function updateLinks() {
   const deskUrl = new URL(window.location.href).toString();
-  const loopUrl = new URL(metadataUrl(metadataValue, 'loop'), window.location.href).toString();
   const playUrl = new URL(metadataUrl(metadataValue, 'play'), window.location.href).toString();
 
-  deskLinkEl.textContent = deskUrl;
-  deskLinkEl.href = deskUrl;
-  loopLinkEl.textContent = loopUrl;
-  loopLinkEl.href = loopUrl;
-  playLinkEl.textContent = playUrl;
-  playLinkEl.href = playUrl;
+  if (playLinkEl) {
+    playLinkEl.textContent = playUrl;
+    playLinkEl.href = playUrl;
+  }
 
-  if (window.QRCode) {
+  if (window.QRCode && deskQrCanvas) {
     window.QRCode.toCanvas(deskQrCanvas, deskUrl, { width: 220, margin: 1 }, () => {});
   }
 }
 
 function bindActions() {
-  playBtn.addEventListener('click', () => window.open(playLinkEl.href, '_blank'));
-  openLoopBtn.addEventListener('click', () => window.open(loopLinkEl.href, '_blank'));
-  copyMetaBtn.addEventListener('click', () => copyToClipboard(metadataValue));
-  copyDeskBtn.addEventListener('click', () => copyToClipboard(deskLinkEl.href));
-  copyLoopBtn.addEventListener('click', () => copyToClipboard(loopLinkEl.href));
-  copyPlayBtn.addEventListener('click', () => copyToClipboard(playLinkEl.href));
+  playBtn?.addEventListener('click', () => {
+    const newWindow = window.open(playLinkEl.href, '_blank', 'noopener');
+    if (newWindow) {
+      newWindow.opener = null;
+      newWindow.focus();
+    }
+  });
+  copyPlayBtn?.addEventListener('click', () => copyToClipboard(playLinkEl.href));
 }
 
 function showMissingMetadata() {
