@@ -316,8 +316,13 @@ function bindActions() {
 }
 
 function showError(message) {
-  patternGrid.innerHTML = '';
-  patternStatsEl.textContent = message;
+  if (patternGrid) {
+    patternGrid.innerHTML = '';
+  }
+  if (patternStatsEl) {
+    patternStatsEl.hidden = false;
+    patternStatsEl.textContent = message;
+  }
   playButton.disabled = true;
   stopButton.disabled = true;
   stopSpectrum();
