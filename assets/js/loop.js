@@ -360,7 +360,7 @@ async function handleShare() {
     chords: state.chords,
     barVariants: state.barVariants,
   });
-  const relativeUrl = metadataUrl(metadata, 'desk.html');
+  const relativeUrl = metadataUrl(metadata, 'desk');
   const absoluteUrl = new URL(relativeUrl, window.location.href).toString();
   metaStringEl.textContent = metadata;
   metaUrlEl.textContent = absoluteUrl;

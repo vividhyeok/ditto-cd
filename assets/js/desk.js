@@ -136,8 +136,8 @@ function updateTags() {
 
 function updateLinks() {
   const deskUrl = new URL(window.location.href).toString();
-  const loopUrl = new URL(metadataUrl(metadataValue, 'loop.html'), window.location.href).toString();
-  const playUrl = new URL(metadataUrl(metadataValue, 'play.html'), window.location.href).toString();
+  const loopUrl = new URL(metadataUrl(metadataValue, 'loop'), window.location.href).toString();
+  const playUrl = new URL(metadataUrl(metadataValue, 'play'), window.location.href).toString();
 
   deskLinkEl.textContent = deskUrl;
   deskLinkEl.href = deskUrl;
