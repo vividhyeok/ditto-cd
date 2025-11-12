@@ -24,6 +24,17 @@ import {
   deriveVariantsFromMatrix,
 } from './shared.js';
 
+const TRACK_META = {
+  drum: { icon: '🥁', name: 'Drum', role: 'drum' },
+  bass: { icon: '🔊', name: 'Bass', role: 'bass' },
+  melody: { icon: '🎹', name: 'Melody 1', role: 'melody' },
+  sub: { icon: '🎛️', name: 'Melody 2', role: 'melody2' },
+};
+
+function getTrackMeta(track) {
+  return TRACK_META[track.id] || { icon: '🎛️', name: track.label || 'Track', role: track.id };
+}
+
 const FIXED_TEMPO = 107;
 
 let state = cloneState(DEFAULT_STATE);
@@ -55,18 +66,17 @@ const chordBarElements = [];
 function renderLabels() {
   const labelsContainer = document.getElementById('trackLabels');
   labelsContainer.innerHTML = '';
-  TRACKS.forEach((track, index) => {
+  TRACKS.forEach((track) => {
     const card = document.createElement('div');
     card.className = 'track-label';
-    card.innerHTML = `<span class="track-label__pip">${index + 1}</span>`;
-    card.title = track.label;
+    const meta = getTrackMeta(track);
+    card.innerHTML = `
+      <span class="track-label__icon">${meta.icon}</span>
+      <span class="track-label__name">${meta.name}</span>
+    `;
+    card.title = track.label || meta.name;
     labelsContainer.appendChild(card);
   });
-  const chordCard = document.createElement('div');
-  chordCard.className = 'track-label';
-  chordCard.innerHTML = '<span class="track-label__pip">S</span>';
-  chordCard.title = 'Scale';
-  labelsContainer.appendChild(chordCard);
 }
 
 function renderGrid() {
@@ -87,6 +97,8 @@ function renderGrid() {
       toggle.className = 'variant-toggle';
       toggle.dataset.track = String(trackIndex);
       toggle.dataset.bar = String(barIndex);
+      const meta = getTrackMeta(TRACKS[trackIndex]);
+      toggle.dataset.role = meta.role;
       toggle.addEventListener('click', handleVariantToggle);
       barCell.appendChild(toggle);
       variantButtons[trackIndex][barIndex] = toggle;
@@ -124,12 +136,17 @@ function updateVariantVisual(trackIndex, barIndex) {
   const selected = state.barVariants[trackIndex][barIndex] ?? 0;
   const track = TRACKS[trackIndex];
   const variant = track.variants[selected] || track.variants[0];
+  const meta = getTrackMeta(track);
   toggle.dataset.variant = String(selected);
   const isAlt = selected !== 0;
   toggle.classList.toggle('variant-toggle--alt', isAlt);
-  toggle.innerHTML = `<span class="variant-toggle__label">${variant.label}</span>`;
+  toggle.innerHTML = `
+    <span class="variant-toggle__corner">${meta.icon}</span>
+    <span class="variant-toggle__label">${variant.label}</span>
+    <span class="variant-toggle__caption">${meta.name}</span>
+  `;
   toggle.setAttribute('aria-pressed', isAlt ? 'true' : 'false');
-  toggle.setAttribute('aria-label', `${track.label} ${barIndex + 1}마디 ${variant.label}`);
+  toggle.setAttribute('aria-label', `${meta.name} ${barIndex + 1}마디 ${variant.label}`);
 }
 
 function updateChordVisual(barIndex) {
@@ -239,7 +256,8 @@ async function togglePlayback() {
     scheduleTransport();
     Tone.Transport.start('+0.05');
     isPlaying = true;
-    playButton.textContent = 'Stop';
+    playButton.classList.add('is-playing');
+    playButton.setAttribute('aria-label', '일시 정지');
     showToast('루프 재생 시작');
   } else {
     Tone.Transport.stop();
@@ -250,7 +268,8 @@ async function togglePlayback() {
     isPlaying = false;
     clearCurrentHighlight();
     currentStep = -1;
-    playButton.textContent = 'Play';
+    playButton.classList.remove('is-playing');
+    playButton.setAttribute('aria-label', '재생');
   }
 }
 

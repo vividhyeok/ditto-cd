@@ -31,8 +31,8 @@ export const TRACKS = [
   },
   {
     id: 'melody',
-    label: 'Melody',
-    info: '상단 라인',
+    label: 'Melody 1',
+    info: '상단 멜로디',
     sample: '../deep-drum/sounds/keys.mp3',
     variants: [
       { id: 'melody0', label: '00', pattern: [false, true, false, true], info: 'wave' },
@@ -43,8 +43,8 @@ export const TRACKS = [
   },
   {
     id: 'sub',
-    label: 'Sub',
-    info: '공간 채움',
+    label: 'Melody 2',
+    info: '보조 멜로디',
     sample: '../deep-drum/sounds/guitar.mp3',
     variants: [
       { id: 'sub0', label: '00', pattern: [true, false, false, false], info: 'hold' },
