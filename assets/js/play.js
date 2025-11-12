@@ -1,14 +1,20 @@
 import {
   TRACKS,
   STEP_COUNT,
+  BAR_COUNT,
   parseMetadata,
   getQueryParam,
   showToast,
-  getScaleNotes,
   getScaleLabel,
   countChordSegments,
   deriveVariantsFromMatrix,
 } from './shared.js';
+import {
+  createLoopEngine,
+  buildTimeline,
+  mapBarVariantsToLabels,
+  chordSelectionsToSequence,
+} from './tone-variants.js';
 
 const patternGrid = document.getElementById('patternPreview');
 const patternStatsEl = document.getElementById('patternStats');
@@ -19,8 +25,7 @@ const playButton = document.getElementById('playToggle');
 const stopButton = document.getElementById('stopButton');
 
 let parsedData;
-let players;
-let chordSynth;
+let toneEngine;
 let transportEventId;
 let isPlaying = false;
 let currentStep = -1;
@@ -110,54 +115,44 @@ function setHighlight(stepIndex) {
   }
 }
 
-async function ensurePlayers() {
-  if (!players) {
-    players = new Tone.Players(
-      TRACKS.reduce((acc, track) => {
-        acc[track.id] = track.sample;
-        return acc;
-      }, {})
-    ).toDestination();
-    await players.loaded;
-  }
-  if (!chordSynth) {
-    chordSynth = new Tone.PolySynth(Tone.Synth, {
-      envelope: {
-        attack: 0.01,
-        decay: 0.15,
-        sustain: 0.7,
-        release: 0.35,
-      },
-    }).toDestination();
-    chordSynth.volume.value = -6;
-    chordSynth.maxPolyphony = 8;
-  }
-}
-
 function scheduleTransport() {
-  Tone.Transport.cancel();
-  const chordSteps = Array.isArray(parsedData.chords) ? parsedData.chords : emptyChordSteps();
-  transportEventId = Tone.Transport.scheduleRepeat((time) => {
+  if (typeof transportEventId !== 'undefined') {
+    Tone.Transport.clear(transportEventId);
+    transportEventId = undefined;
+  }
+  transportEventId = Tone.Transport.scheduleRepeat(() => {
     currentStep = (currentStep + 1) % STEP_COUNT;
     setHighlight(currentStep);
-    TRACKS.forEach((track, trackIndex) => {
-      if (parsedData.matrix[trackIndex][currentStep]) {
-        players.player(track.id).start(time);
-      }
-    });
-    const chordStep = chordSteps[currentStep];
-    if (chordStep && chordStep.head && chordStep.chordIndex !== null && chordSynth) {
-      const duration = Tone.Time(chordStep.length, '16n');
-  const notes = getScaleNotes(chordStep.chordIndex);
-      chordSynth.triggerAttackRelease(notes, duration, time);
-    }
   }, '16n');
+}
+
+function ensureToneEngine() {
+  if (!toneEngine) {
+    toneEngine = createLoopEngine({ bpm: parsedData.tempo });
+  }
+  toneEngine.setBpm(parsedData.tempo);
+}
+
+function buildEngineTimeline() {
+  const barVariants = parsedData.barVariants && parsedData.barVariants.length
+    ? parsedData.barVariants
+    : deriveVariantsFromMatrix(parsedData.matrix);
+  const variantLabels = mapBarVariantsToLabels(barVariants, BAR_COUNT);
+  const chords = chordSelectionsToSequence(parsedData.chordSelections || [], BAR_COUNT);
+  return buildTimeline({
+    barCount: BAR_COUNT,
+    variantLabels,
+    chords,
+  });
 }
 
 async function startPlayback() {
   if (isPlaying) return;
-  await ensurePlayers();
   await Tone.start();
+  ensureToneEngine();
+  toneEngine.setTimeline(buildEngineTimeline());
+  toneEngine.start();
+  Tone.Transport.position = 0;
   Tone.Transport.bpm.value = parsedData.tempo;
   currentStep = -1;
   scheduleTransport();
@@ -170,11 +165,12 @@ async function startPlayback() {
 function stopPlayback() {
   if (!isPlaying) return;
   Tone.Transport.stop();
+  Tone.Transport.position = 0;
   if (typeof transportEventId !== 'undefined') {
     Tone.Transport.clear(transportEventId);
     transportEventId = undefined;
   }
-  Tone.Transport.cancel();
+  toneEngine?.stop();
   isPlaying = false;
   currentStep = -1;
   clearHighlight();

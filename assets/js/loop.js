@@ -16,13 +16,18 @@ import {
   CHORD_QUALITIES,
   chordIndexFromParts,
   getScaleLabel,
-  getScaleNotes,
   variantsToMatrix,
   chordSelectionsToSteps,
   createDefaultBarVariants,
   createDefaultChordSelections,
   deriveVariantsFromMatrix,
 } from './shared.js';
+import {
+  createLoopEngine,
+  buildTimeline,
+  mapBarVariantsToLabels,
+  chordSelectionsToSequence,
+} from './tone-variants.js';
 
 const TRACK_META = {
   drum: { icon: '🥁', name: 'Drum', role: 'drum' },
@@ -39,8 +44,7 @@ const FIXED_TEMPO = 107;
 
 let state = cloneState(DEFAULT_STATE);
 state.tempo = FIXED_TEMPO;
-let players;
-let chordSynth;
+let toneEngine;
 let transportEventId;
 let isPlaying = false;
 let currentStep = -1;
@@ -194,6 +198,7 @@ function handleVariantToggle(event) {
   state.barVariants[trackIndex][barIndex] = next;
   syncMatrix();
   updateVariantVisual(trackIndex, barIndex);
+  refreshEngineTimeline();
 }
 
 function handleChordBarClick(event) {
@@ -202,55 +207,52 @@ function handleChordBarClick(event) {
   state.chordSelections[barIndex] = selectedChordIndex;
   syncChords();
   updateChordVisual(barIndex);
-}
-
-async function ensurePlayers() {
-  if (!players) {
-    players = new Tone.Players(
-      TRACKS.reduce((acc, track) => {
-        acc[track.id] = track.sample;
-        return acc;
-      }, {})
-    ).toDestination();
-    await players.loaded;
-  }
-  if (!chordSynth) {
-    chordSynth = new Tone.PolySynth(Tone.Synth, {
-      envelope: {
-        attack: 0.01,
-        decay: 0.2,
-        sustain: 0.7,
-        release: 0.4,
-      },
-    }).toDestination();
-    chordSynth.volume.value = -6;
-    chordSynth.maxPolyphony = 8;
-  }
+  refreshEngineTimeline();
 }
 
 function scheduleTransport() {
-  Tone.Transport.cancel();
-  transportEventId = Tone.Transport.scheduleRepeat((time) => {
+  if (typeof transportEventId !== 'undefined') {
+    Tone.Transport.clear(transportEventId);
+    transportEventId = undefined;
+  }
+  transportEventId = Tone.Transport.scheduleRepeat(() => {
     currentStep = (currentStep + 1) % STEP_COUNT;
     setCurrentHighlight(currentStep);
-    TRACKS.forEach((track, trackIndex) => {
-      if (state.matrix[trackIndex][currentStep]) {
-        players.player(track.id).start(time);
-      }
-    });
-    const chordStep = state.chords[currentStep];
-    if (chordStep && chordStep.head && chordStep.chordIndex !== null && chordSynth) {
-      const duration = Tone.Time(chordStep.length, '16n');
-      const notes = getScaleNotes(chordStep.chordIndex);
-      chordSynth.triggerAttackRelease(notes, duration, time);
-    }
   }, '16n');
+}
+
+function ensureToneEngine() {
+  if (!toneEngine) {
+    toneEngine = createLoopEngine({ bpm: state.tempo });
+  }
+  toneEngine.setBpm(state.tempo);
+}
+
+function buildEngineTimeline() {
+  const variantLabels = mapBarVariantsToLabels(state.barVariants, BAR_COUNT);
+  const chords = chordSelectionsToSequence(state.chordSelections || [], BAR_COUNT);
+  return buildTimeline({
+    barCount: BAR_COUNT,
+    variantLabels,
+    chords,
+  });
+}
+
+function refreshEngineTimeline() {
+  if (toneEngine && isPlaying) {
+    toneEngine.setTimeline(buildEngineTimeline());
+  }
 }
 
 async function togglePlayback() {
   if (!isPlaying) {
-    await ensurePlayers();
     await Tone.start();
+    ensureToneEngine();
+    syncMatrix();
+    syncChords();
+    toneEngine.setTimeline(buildEngineTimeline());
+    toneEngine.start();
+    Tone.Transport.position = 0;
     Tone.Transport.bpm.value = state.tempo;
     currentStep = -1;
     scheduleTransport();
@@ -261,10 +263,12 @@ async function togglePlayback() {
     showToast('루프 재생 시작');
   } else {
     Tone.Transport.stop();
+    Tone.Transport.position = 0;
     if (typeof transportEventId !== 'undefined') {
       Tone.Transport.clear(transportEventId);
       transportEventId = undefined;
     }
+    toneEngine?.stop();
     isPlaying = false;
     clearCurrentHighlight();
     currentStep = -1;
@@ -281,6 +285,7 @@ function resetChordState() {
   chordQualitySelect.value = '0';
   chordQualitySelect.disabled = true;
   chordQualitySelect.classList.add('is-disabled');
+  refreshEngineTimeline();
 }
 
 function resetPattern() {
@@ -292,6 +297,7 @@ function resetPattern() {
     }
   });
   resetChordState();
+  refreshEngineTimeline();
 }
 
 function syncGridFromState() {
@@ -303,6 +309,7 @@ function syncGridFromState() {
     }
   });
   chordBarElements.forEach((_, barIndex) => updateChordVisual(barIndex));
+  refreshEngineTimeline();
 }
 
 function getSelectedChordIndex() {
@@ -342,6 +349,7 @@ function applyMetadata(metadata) {
       window.QRCode.toCanvas(qrCanvas, absoluteUrl, { width: 220, margin: 1 }, () => {});
     }
     showToast('메타데이터 불러옴');
+    refreshEngineTimeline();
   } catch (error) {
     console.error(error);
     showToast('메타데이터 해석 실패');
