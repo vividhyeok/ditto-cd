@@ -17,7 +17,7 @@
     </header>
 
     <section class="control-panel" id="detailPanel">
-      <div class="meta-header">
+      <div class="meta-header" hidden>
         <h2 style="margin:0;font-size:1.2rem;">루프 요약</h2>
         <div class="tag-list">
           <span class="tag" id="tempoTag">- BPM</span>
@@ -27,14 +27,14 @@
 
   <div class="card" id="patternStats">패턴 정보를 불러오는 중...</div>
 
-      <div class="pattern-grid" id="patternPreview"></div>
+      <div class="pattern-grid" id="patternPreview" hidden></div>
 
   <div class="card hidden" id="variantSummary">
         <strong>바이브 선택</strong>
         <div class="variant-list" id="variantList"></div>
       </div>
 
-      <div class="card">
+      <div class="card" hidden>
         <strong>메타데이터</strong>
         <div class="meta-tag" id="metaString"></div>
       </div>
