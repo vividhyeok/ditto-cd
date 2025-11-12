@@ -67,6 +67,72 @@ const clearChordsBtn = document.getElementById('clearChords');
 const variantButtons = TRACKS.map(() => Array.from({ length: BAR_COUNT }, () => null));
 const chordBarElements = [];
 
+const QR_RENDER_OPTIONS = { width: 220, margin: 1 };
+let qrScriptReady = Boolean(window.QRCode?.toCanvas);
+let qrScriptListenerRegistered = false;
+
+function ensureQrScriptListener() {
+  if (qrScriptReady || qrScriptListenerRegistered) {
+    return;
+  }
+  const script = document.querySelector('script[src*="qrcode"]');
+  if (!script) {
+    return;
+  }
+  qrScriptListenerRegistered = true;
+  script.addEventListener(
+    'load',
+    () => {
+      qrScriptReady = true;
+      qrScriptListenerRegistered = false;
+      if (qrCanvas?.dataset?.pendingUrl) {
+        const pendingUrl = qrCanvas.dataset.pendingUrl;
+        delete qrCanvas.dataset.pendingUrl;
+        renderQrCode(pendingUrl);
+      }
+    },
+    { once: true },
+  );
+}
+
+function renderQrCode(url) {
+  if (!qrCanvas || !url) {
+    return;
+  }
+  const context = qrCanvas.getContext ? qrCanvas.getContext('2d') : null;
+  if (context) {
+    context.clearRect(0, 0, qrCanvas.width || 0, qrCanvas.height || 0);
+  }
+  if (qrScriptReady && window.QRCode?.toCanvas) {
+    window.QRCode.toCanvas(qrCanvas, url, QR_RENDER_OPTIONS, (error) => {
+      if (error) {
+        console.error(error);
+        showToast('QR 생성 실패');
+      }
+    });
+    return;
+  }
+  if (!qrCanvas.dataset.pendingUrl) {
+    showToast('QR 라이브러리를 불러오는 중입니다...');
+  }
+  qrCanvas.dataset.pendingUrl = url;
+  ensureQrScriptListener();
+}
+
+function showSharePreview(metadata, url) {
+  if (metaPanel) {
+    metaPanel.classList.add('visible');
+  }
+  if (metaStringEl) {
+    metaStringEl.textContent = metadata;
+  }
+  if (metaUrlEl) {
+    metaUrlEl.textContent = url;
+    metaUrlEl.href = url;
+  }
+  renderQrCode(url);
+}
+
 function renderLabels() {
   const labelsContainer = document.getElementById('trackLabels');
   labelsContainer.innerHTML = '';
@@ -339,15 +405,9 @@ function applyMetadata(metadata) {
       chords: chordSelectionsToSteps(chordSelections),
     });
     syncGridFromState();
-    metaPanel.classList.add('visible');
-    metaStringEl.textContent = metadata;
-    const relativeUrl = metadataUrl(metadata, 'desk.html');
+    const relativeUrl = metadataUrl(metadata, 'desk');
     const absoluteUrl = new URL(relativeUrl, window.location.href).toString();
-    metaUrlEl.textContent = absoluteUrl;
-    metaUrlEl.href = absoluteUrl;
-    if (qrCanvas && window.QRCode) {
-      window.QRCode.toCanvas(qrCanvas, absoluteUrl, { width: 220, margin: 1 }, () => {});
-    }
+    showSharePreview(metadata, absoluteUrl);
     showToast('메타데이터 불러옴');
     refreshEngineTimeline();
   } catch (error) {
@@ -370,19 +430,8 @@ async function handleShare() {
   });
   const relativeUrl = metadataUrl(metadata, 'desk');
   const absoluteUrl = new URL(relativeUrl, window.location.href).toString();
-  metaStringEl.textContent = metadata;
-  metaUrlEl.textContent = absoluteUrl;
-  metaUrlEl.href = absoluteUrl;
-  metaPanel.classList.add('visible');
-
-  if (window.QRCode) {
-    window.QRCode.toCanvas(qrCanvas, absoluteUrl, { width: 220, margin: 1 }, (err) => {
-      if (err) {
-        console.error(err);
-        showToast('QR 생성 실패');
-      }
-    });
-  }
+  showSharePreview(metadata, absoluteUrl);
+  showToast('공유 링크를 만들었어요');
 }
 
 function populateChordControls() {
@@ -450,6 +499,7 @@ function init() {
   renderGrid();
   populateChordControls();
   syncGridFromState();
+  ensureQrScriptListener();
   initButtons();
   const metadata = getQueryParam('meta');
   if (metadata) {
