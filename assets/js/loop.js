@@ -165,7 +165,7 @@ function renderQrCode(url) {
   ensureQrScriptListener();
 }
 
-function showSharePreview(metadata, url) {
+function showSharePreview(metadata, displayUrl, qrUrl = displayUrl) {
   if (metaPanel) {
     metaPanel.classList.add('visible');
   }
@@ -173,10 +173,10 @@ function showSharePreview(metadata, url) {
     metaStringEl.textContent = metadata;
   }
   if (metaUrlEl) {
-    metaUrlEl.textContent = url;
-    metaUrlEl.href = url;
+    metaUrlEl.textContent = displayUrl;
+    metaUrlEl.href = displayUrl;
   }
-  renderQrCode(url);
+  renderQrCode(qrUrl);
 }
 
 function renderLabels() {
@@ -451,9 +451,11 @@ function applyMetadata(metadata) {
       chords: chordSelectionsToSteps(chordSelections),
     });
     syncGridFromState();
-    const relativeUrl = metadataUrl(metadata, 'desk');
-    const absoluteUrl = new URL(relativeUrl, window.location.href).toString();
-    showSharePreview(metadata, absoluteUrl);
+    const deskRelativeUrl = metadataUrl(metadata, 'desk');
+    const deskAbsoluteUrl = new URL(deskRelativeUrl, window.location.href).toString();
+    const playRelativeUrl = metadataUrl(metadata, 'play');
+    const playAbsoluteUrl = new URL(playRelativeUrl, window.location.href).toString();
+    showSharePreview(metadata, playAbsoluteUrl, deskAbsoluteUrl);
     showToast('메타데이터 불러옴');
     refreshEngineTimeline();
   } catch (error) {
@@ -474,9 +476,11 @@ async function handleShare() {
     chords: state.chords,
     barVariants: state.barVariants,
   });
-  const relativeUrl = metadataUrl(metadata, 'desk');
-  const absoluteUrl = new URL(relativeUrl, window.location.href).toString();
-  showSharePreview(metadata, absoluteUrl);
+  const deskRelativeUrl = metadataUrl(metadata, 'desk');
+  const deskAbsoluteUrl = new URL(deskRelativeUrl, window.location.href).toString();
+  const playRelativeUrl = metadataUrl(metadata, 'play');
+  const playAbsoluteUrl = new URL(playRelativeUrl, window.location.href).toString();
+  showSharePreview(metadata, playAbsoluteUrl, deskAbsoluteUrl);
   showToast('공유 링크를 만들었어요');
 }
 
