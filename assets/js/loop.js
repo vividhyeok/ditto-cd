@@ -28,6 +28,7 @@ import {
   mapBarVariantsToLabels,
   chordSelectionsToSequence,
 } from './tone-variants.js';
+import { ensureToneReady, primeToneUnlock } from './tone-helpers.js';
 
 const TRACK_META = {
   drum: { icon: '🥁', name: 'Drum', role: 'drum' },
@@ -358,7 +359,11 @@ function refreshEngineTimeline() {
 
 async function togglePlayback() {
   if (!isPlaying) {
-    await Tone.start();
+    const ready = await ensureToneReady();
+    if (!ready) {
+      showToast('오디오가 아직 준비되지 않았어요. 재생 버튼을 다시 눌러주세요');
+      return;
+    }
     ensureToneEngine();
     syncMatrix();
     syncChords();
@@ -542,6 +547,8 @@ function initButtons() {
   if (!('NDEFReader' in window)) {
     nfcBtn.classList.add('hidden');
   }
+
+  primeToneUnlock(playButton);
 }
 
 function init() {

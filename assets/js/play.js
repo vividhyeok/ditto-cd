@@ -15,6 +15,7 @@ import {
   mapBarVariantsToLabels,
   chordSelectionsToSequence,
 } from './tone-variants.js';
+import { ensureToneReady, primeToneUnlock } from './tone-helpers.js';
 
 const patternGrid = document.getElementById('patternPreview');
 const patternStatsEl = document.getElementById('patternStats');
@@ -271,7 +272,11 @@ function buildEngineTimeline() {
 
 async function startPlayback() {
   if (isPlaying) return;
-  await Tone.start();
+  const ready = await ensureToneReady();
+  if (!ready) {
+    showToast('오디오 활성화를 위해 한번 더 탭해주세요');
+    return;
+  }
   ensureToneEngine();
   toneEngine.setTimeline(buildEngineTimeline());
   toneEngine.start();
@@ -313,6 +318,7 @@ function bindActions() {
   stopButton.addEventListener('click', stopPlayback);
   window.addEventListener('pagehide', stopPlayback);
   window.addEventListener('beforeunload', stopPlayback);
+  primeToneUnlock(playButton);
 }
 
 function showError(message) {
