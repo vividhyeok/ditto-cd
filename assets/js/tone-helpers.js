@@ -1,4 +1,4 @@
-const UNLOCK_EVENTS = ['pointerdown', 'touchend', 'keydown'];
+const UNLOCK_EVENTS = ['pointerdown', 'touchstart', 'touchend', 'keydown'];
 
 let toneReady = false;
 let unlockingPromise = null;
@@ -81,13 +81,17 @@ async function attemptToneStart() {
   if (!tone) {
     return false;
   }
+  let toneStartResult;
   try {
-    await tone.start();
+    toneStartResult = tone.start();
   } catch (error) {
     console.warn('Tone.start() rejected', error);
   }
   const audioContext = getToneContext();
   if (!audioContext) {
+    if (toneStartResult?.catch) {
+      toneStartResult.catch((error) => console.warn('Tone.start() async rejection', error));
+    }
     return false;
   }
   attachStateMonitor(audioContext);
@@ -96,8 +100,9 @@ async function attemptToneStart() {
     detachUnlockListeners();
     return true;
   }
+  let resumeResult;
   try {
-    await audioContext.resume();
+    resumeResult = audioContext.resume();
   } catch (error) {
     console.warn('AudioContext resume threw', error);
   }
@@ -105,6 +110,30 @@ async function attemptToneStart() {
     toneReady = true;
     detachUnlockListeners();
     return true;
+  }
+  if (resumeResult?.then) {
+    try {
+      await resumeResult;
+    } catch (error) {
+      console.warn('AudioContext resume promise rejected', error);
+    }
+    if (audioContext.state === 'running') {
+      toneReady = true;
+      detachUnlockListeners();
+      return true;
+    }
+  }
+  if (toneStartResult?.then) {
+    try {
+      await toneStartResult;
+    } catch (error) {
+      console.warn('Tone.start() promise rejected', error);
+    }
+    if (audioContext.state === 'running') {
+      toneReady = true;
+      detachUnlockListeners();
+      return true;
+    }
   }
   attachUnlockListeners(audioContext);
   return false;
@@ -142,12 +171,14 @@ export function primeToneUnlock(target) {
     ensureToneReady().then((ready) => {
       if (ready) {
         target.removeEventListener('pointerdown', handler);
+        target.removeEventListener('touchstart', handler);
         target.removeEventListener('touchend', handler);
       }
     });
   };
   target.dataset.toneUnlockBound = 'true';
   target.addEventListener('pointerdown', handler, { passive: true });
+  target.addEventListener('touchstart', handler, { passive: true });
   target.addEventListener('touchend', handler, { passive: true });
 }
 
